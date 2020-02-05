@@ -2,13 +2,23 @@ const express = require("express");
 const morgan = require("morgan");
 const helmet = require("helmet");
 const cors = require("cors");
+const mongoose = require("mongoose");
+
+require("dotenv").config({ path: __dirname + "/.env" });
+
+const middlewares = require("./middlewares");
+
+mongoose.connect(process.env.DATABASE_URL, {
+  useNewUrlParser: true
+});
 
 const app = express();
+
 app.use(morgan("common"));
 app.use(helmet());
 app.use(
   cors({
-    origin: "htpp://localhost:3000"
+    origin: process.env.CORS_ORIGIN
   })
 );
 
@@ -18,21 +28,8 @@ app.get("/", (_req, res) => {
   });
 });
 
-app.use((req, res, next) => {
-  const error = new Error(`Not Found - ${req.originalUrl}`);
-  res.status(404);
-  next(error);
-});
-
-app.use((error, _req, res, _next) => {
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-  res.status(statusCode);
-  res.json({
-    message: error.message,
-    stack:
-      process.env.NODE_ENV === "production" ? "Not in production" : error.stack
-  });
-});
+app.use(middlewares.notFound);
+app.use(middlewares.errorHandler);
 
 //create a server object:
 
